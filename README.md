@@ -16,26 +16,7 @@ A text-to-code generator that converts any value into a **QR Code** or **Code128
 ---
 
 ## Architecture
-
-```
-Browser (index.html)
-       │  HTTP POST /generate
-       ▼
-  ┌─────────────────────────────────────┐  Railway
-  │  ┌───────────────────────────────┐  │
-  │  │  Gunicorn (WSGI · 2 workers)  │  │  Docker
-  │  │            │                  │  │
-  │  │       Flask API               │  │
-  │  │      /generate                │  │
-  │  │       ┌──────┴──────┐         │  │
-  │  │   Domain         Services     │  │
-  │  │  CodeRequest   QR · Barcode   │  │
-  │  └───────────────────────────────┘  │
-  └─────────────────────────────────────┘
-       │  base64 JSON
-       ▼
-Browser (renders image)
-```
+![CodeCraft Architecture](docs/architecture.gif)
 
 The request enters through Gunicorn, which acts as the production WSGI server in front of Flask. Flask validates the input via the `CodeRequest` domain entity and delegates image generation to the appropriate service. The result is returned as a base64-encoded PNG string inside a JSON response.
 
