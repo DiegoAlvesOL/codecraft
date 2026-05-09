@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CodeCraft — Code Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg:         #f4f2ee;
+            --white:      #ffffff;
+            --panel:      #ffffff;
+            --gray-light: #ebebeb;
+            --gray-mid:   #d0cec9;
+            --border:     #c8c5be;
+            --text:       #1a1a2e;
+            --text-dim:   #6b6b80;
+            --blue:       #1a1a2e;
+            --blue-mid:   #2e3a6e;
+            --blue-light: #e8eaf6;
+            --green:      #2e7d32;
+            --red:        #c62828;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 20px 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, #1a1a2e12 1px, transparent 1px);
+            background-size: 22px 22px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 44px;
+            animation: fadeDown 0.6s ease both;
+        }
+
+        .version-badge {
+            display: inline-block;
+            border: 1px solid var(--border);
+            background: var(--white);
+            padding: 5px 16px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-family: 'VT323', monospace;
+            font-size: 80px;
+            letter-spacing: 8px;
+            line-height: 1;
+            color: var(--blue);
+        }
+
+        header p {
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 32px;
+            margin-bottom: 16px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .card-title {
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: var(--blue-mid);
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 12px;
+        }
+
+        .card-title::before { content: '▶'; font-size: 11px; }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+            background: var(--gray-light);
+            padding: 14px 18px;
+        }
+
+        .toggle-label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            transition: color 0.2s;
+            user-select: none;
+            flex: 1;
+        }
+
+        .toggle-label.right { text-align: right; }
+        .toggle-label.active { color: var(--blue); }
+
+        .toggle-track {
+            width: 56px;
+            height: 26px;
+            background: var(--gray-mid);
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toggle-track.on { background: var(--blue-light); border-color: var(--blue-mid); }
+
+        .toggle-thumb {
+            width: 22px;
+            height: 18px;
+            background: var(--text-dim);
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .toggle-track.on .toggle-thumb { transform: translateX(30px); background: var(--blue-mid); }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .input-group input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            padding: 13px 16px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            letter-spacing: 2px;
+            width: 100%;
+        }
+
+        .input-group input:focus { border-color: var(--blue-mid); background: var(--white); }
+        .input-group input::placeholder { color: var(--gray-mid); }
+
+        .char-count {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: right;
+            letter-spacing: 1px;
+        }
+
+        .char-count.warn { color: var(--red); }
+
+        .btn-generate {
+            width: 100%;
+            padding: 15px;
+            background: var(--blue);
+            border: none;
+            color: #ffffff;
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-generate:hover { background: var(--blue-mid); }
+        .btn-generate:active { transform: scale(0.99); }
+        .btn-generate:disabled { background: var(--gray-mid); cursor: not-allowed; }
+
+        .status-bar {
+            font-size: 11px;
+            letter-spacing: 2px;
+            padding: 10px 0 0;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            min-height: 30px;
+            text-align: center;
+        }
+
+        .status-bar.ok   { color: var(--green); }
+        .status-bar.err  { color: var(--red); }
+        .status-bar.busy { color: var(--blue-mid); }
+
+        .preview-card { animation-delay: 0.08s; }
+
+        .output-screen {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .output-screen::before,
+        .output-screen::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: var(--border);
+            border-style: solid;
+        }
+
+        .output-screen::before { top: 6px; left: 6px; border-width: 1px 0 0 1px; }
+        .output-screen::after  { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
+
+        .placeholder { text-align: center; color: var(--gray-mid); }
+        .placeholder .icon { font-family: 'VT323', monospace; font-size: 44px; display: block; margin-bottom: 8px; }
+        .placeholder p { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+
+        #preview-image { max-width: 100%; max-height: 260px; display: none; border: 1px solid var(--border); }
+
+        .btn-download {
+            width: 100%;
+            padding: 13px;
+            background: transparent;
+            border: 1px solid var(--blue);
+            color: var(--blue);
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            display: none;
+        }
+
+        .btn-download:hover { background: var(--blue); color: var(--white); }
+
+        footer {
+            margin-top: 48px;
+            padding: 28px 0 48px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            width: 100%;
+            animation: fadeUp 0.7s ease 0.2s both;
+        }
+
+        .powered-label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .dcode-wrapper {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 28px;
+        }
+
+        .dcode-logo { width: 120px; display: block; }
+
+        .dcode-name {
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            letter-spacing: 4px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0; }
+        }
+
+        .cursor::after {
+            content: '█';
+            animation: blink 1s step-end infinite;
+            color: var(--blue-mid);
+            margin-left: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <header>
+        <div class="version-badge">v1.0.0 — system online</div>
+        <h1 class="cursor">CODECRAFT</h1>
+        <p>Text to QR Code &amp; Barcode generator</p>
+    </header>
+
+    <div class="card">
+        <div class="card-title">Configuration</div>
+
+        <div class="toggle-row">
+            <span class="toggle-label active" id="label-qr">QR Code</span>
+            <div class="toggle-track" id="toggle" onclick="switchType()">
+                <div class="toggle-thumb"></div>
+            </div>
+            <span class="toggle-label right" id="label-bar">Barcode</span>
+        </div>
+
+        <div class="input-group">
+            <label for="value-input">Input value</label>
+            <input
+                    type="text"
+                    id="value-input"
+                    placeholder="Type your text here..."
+                    oninput="onInput(this)"
+                    maxlength="500"
+            />
+            <span class="char-count" id="char-count">0 / 500</span>
+        </div>
+
+        <button class="btn-generate" id="btn-generate" onclick="generate()">
+            ▶ Generate
+        </button>
+
+        <div class="status-bar" id="status-bar">awaiting input_</div>
+    </div>
+
+    <div class="card preview-card">
+        <div class="card-title">Output</div>
+
+        <div class="output-screen">
+            <div class="placeholder" id="placeholder">
+                <span class="icon">▭</span>
+                <p>No output yet</p>
+            </div>
+            <img id="preview-image" alt="Generated code" />
+        </div>
+
+        <button class="btn-download" id="btn-download" onclick="download()">
+            ↓ Download PNG
+        </button>
+    </div>
+
+</div>
+
+<footer>
+    <p class="powered-label">Powered by</p>
+    <div class="dcode-wrapper">
+        <img src="./logo_dcode.png" alt="DCODE Solutions" class="dcode-logo" />
+    </div>
+</footer>
+
+<script>
+    const API_URL = 'http://127.0.0.1:5000/generate';
+    let currentType = 'qrcode';
+    let currentBase64 = null;
+    const LIMITS = { qrcode: 500, barcode: 80 };
+
+    function switchType() {
+        const toggle   = document.getElementById('toggle');
+        const labelQr  = document.getElementById('label-qr');
+        const labelBar = document.getElementById('label-bar');
+        const input    = document.getElementById('value-input');
+
+        if (currentType === 'qrcode') {
+            currentType = 'barcode';
+            toggle.classList.add('on');
+            labelQr.classList.remove('active');
+            labelBar.classList.add('active');
+            input.maxLength = LIMITS.barcode;
+        } else {
+            currentType = 'qrcode';
+            toggle.classList.remove('on');
+            labelQr.classList.add('active');
+            labelBar.classList.remove('active');
+            input.maxLength = LIMITS.qrcode;
+        }
+
+        onInput(input);
+        resetPreview();
+    }
+
+    function onInput(input) {
+        const limit   = LIMITS[currentType];
+        const count   = input.value.length;
+        const counter = document.getElementById('char-count');
+        counter.textContent = count + ' / ' + limit;
+        counter.classList.toggle('warn', count >= limit * 0.9);
+    }
+
+    function setStatus(message, type) {
+        const bar = document.getElementById('status-bar');
+        bar.textContent = message + '_';
+        bar.className = 'status-bar ' + (type || '');
+    }
+
+    function resetPreview() {
+        document.getElementById('placeholder').style.display = 'block';
+        document.getElementById('preview-image').style.display = 'none';
+        document.getElementById('btn-download').style.display = 'none';
+        currentBase64 = null;
+    }
+
+    async function generate() {
+        const input = document.getElementById('value-input');
+        const value = input.value.trim();
+
+        if (!value) {
+            setStatus('error: input value is required', 'err');
+            return;
+        }
+
+        const btn = document.getElementById('btn-generate');
+        btn.disabled = true;
+        setStatus('processing request...', 'busy');
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: value, code_type: currentType }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setStatus('error: ' + data.error, 'err');
+                return;
+            }
+
+            currentBase64 = data.image;
+            renderPreview(currentBase64);
+            setStatus('output ready', 'ok');
+
+        } catch (error) {
+            setStatus('error: could not reach the server', 'err');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function renderPreview(base64) {
+        const image       = document.getElementById('preview-image');
+        const placeholder = document.getElementById('placeholder');
+        const btnDownload = document.getElementById('btn-download');
+
+        image.src = 'data:image/png;base64,' + base64;
+        placeholder.style.display = 'none';
+        image.style.display = 'block';
+        btnDownload.style.display = 'block';
+    }
+
+    function download() {
+        if (!currentBase64) { return; }
+
+        const input    = document.getElementById('value-input');
+        const filename = input.value.trim().replace(/\s+/g, '_') + '_' + currentType + '.png';
+        const link     = document.createElement('a');
+
+        link.href     = 'data:image/png;base64,' + currentBase64;
+        link.download = filename;
+        link.click();
+    }
+</script>
+
+</body>
+</html>
