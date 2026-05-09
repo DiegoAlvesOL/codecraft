@@ -14,7 +14,7 @@ _frontend_folder = os.path.join(os.path.dirname(__file__), '..', '..', 'frontend
 application = Flask(__name__, static_folder=_frontend_folder)
 CORS(application)
 
-_generators ={
+_generators = {
     "qrcode": QRCodeGenerator(),
     "barcode": BarcodeGenerator(),
 }
@@ -29,6 +29,11 @@ def index():
 def static_file(filename):
     """Serves any static file from the frontend folder (css, js, images)."""
     return send_from_directory(_frontend_folder, filename)
+
+@application.route("/health")
+def health():
+    """Health check endpoint for Railway deployment monitoring."""
+    return jsonify({"status": "ok"}), 200
 
 
 @application.route("/generate", methods=["POST"])
@@ -58,7 +63,7 @@ def generate():
     try:
         code_request = CodeRequest(value=value, code_type=code_type)
     except ValueError as validation_error:
-        return jsonify( {"error": str(validation_error)}), 400
+        return jsonify({"error": str(validation_error)}), 400
 
 
     try:
