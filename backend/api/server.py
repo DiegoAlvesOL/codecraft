@@ -1,20 +1,35 @@
-from logging import exception
 
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-from backend.domain import code_request
+
 from backend.domain.code_request import CodeRequest
 from backend.services.qr_generator import QRCodeGenerator
 from backend.services.barcode_generator import BarcodeGenerator
 
-application = Flask(__name__)
+
+_frontend_folder = os.path.join(os.path.dirname(__file__), '..', '..', 'frontend')
+
+application = Flask(__name__, static_folder=_frontend_folder)
 CORS(application)
 
 _generators ={
     "qrcode": QRCodeGenerator(),
     "barcode": BarcodeGenerator(),
 }
+
+
+@application.route("/")
+def index():
+    """Serves the frontend index.html."""
+    return send_from_directory(_frontend_folder, "index.html")
+
+@application.route("/<path:filename>")
+def static_file(filename):
+    """Serves any static file from the frontend folder (css, js, images)."""
+    return send_from_directory(_frontend_folder, filename)
+
 
 @application.route("/generate", methods=["POST"])
 def generate():
