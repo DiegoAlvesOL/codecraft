@@ -4,5 +4,4 @@ pillow
 python-barcode
 flask
 flask-cors
-
-
+gunicorn
